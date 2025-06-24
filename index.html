@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EVOMX 98</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:Arial,sans-serif;background:#111;color:#fff;overflow-x:hidden;}
+    a{color:#FFD700;text-decoration:none;}a:hover{text-decoration:underline;}
+    header,footer{background:#000;padding:1rem;text-align:center;}
+    .search-bar{padding:1rem;text-align:center;}
+    .search-bar input{width:80%;max-width:400px;padding:.5rem;border:none;border-radius:4px;}
+    .catalog{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;padding:1rem;}
+    .card{background:#222;border-radius:8px;padding:1rem;}
+    .card img{width:100px;height:100px;object-fit:cover;cursor:pointer;margin-bottom:.5rem;}
+    .btn{padding:.5rem 1rem;border:none;border-radius:4px;cursor:pointer;}
+    .btn-whatsapp{background:#25D366;color:#fff;margin-top:.5rem;display:inline-block;}
+    .admin-btn{position:fixed;bottom:1rem;right:1rem;background:#FFD700;color:#111;padding:.75rem;border:none;border-radius:8px;z-index:15;}
+    #adminPanel{display:none;position:fixed;top:5%;left:50%;transform:translateX(-50%);background:#222;padding:1rem;border-radius:8px;width:90%;max-width:400px;z-index:18;}
+    #adminPanel > div{margin-bottom:1rem;}
+    #adminPanel input,#adminPanel select,#adminPanel button{width:100%;margin-bottom:.5rem;padding:.5rem;border:none;border-radius:4px;background:#333;color:#fff;}
+    #lightbox{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.8);align-items:center;justify-content:center;z-index:20;}
+    #lightbox img{max-width:90%;max-height:90%;}
+  </style>
+</head>
+<body>
+
+<header><h1>EVOMX 98</h1></header>
+
+<div class="search-bar">
+  <input id="search" placeholder="Buscar producto..."/>
+</div>
+
+<div class="catalog" id="catalog"></div>
+
+<button class="admin-btn" id="adminBtn">Admin</button>
+
+<div id="adminPanel">
+  <!-- LOGIN -->
+  <div id="loginDiv">
+    <h2>Acceso Admin</h2>
+    <input type="password" id="pass" placeholder="Contraseña"/>
+    <button id="loginBtn" class="btn">Entrar</button>
+    <p id="err" style="color:#f33;display:none;">Contraseña incorrecta</p>
+  </div>
+  <!-- FORMULARIO -->
+  <div id="formDiv" style="display:none;">
+    <h2>Agregar Producto</h2>
+    <input id="code" placeholder="Código único"/>
+    <input id="title" placeholder="Título"/>
+    <select id="gender">
+      <option value="">Selecciona género</option>
+      <option>Hombre</option>
+      <option>Mujer</option>
+      <option>Unisex</option>
+      <option>Niños</option>
+    </select>
+    <input id="sizes" placeholder="Talla"/>
+    <input id="colors" placeholder="Color"/>
+    <input id="wa" placeholder="WhatsApp (solo números)"/>
+    <input id="image" type="file" accept="image/*"/>
+    <button id="saveBtn" class="btn">Guardar</button>
+    <button id="cancelBtn" class="btn">Cancelar</button>
+  </div>
+</div>
+
+<div id="lightbox" onclick="this.style.display='none'"><img id="lb"/></div>
+
+<footer>
+  <div>
+    <a href="https://youtube.com/tuCanal" target="_blank">YouTube</a> |
+    <a href="https://facebook.com/evomx98" target="_blank">Facebook</a> |
+    <a href="https://instagram.com/evomx98" target="_blank">Instagram</a> |
+    <a href="https://tiktok.com/@evomx98" target="_blank">TikTok</a>
+  </div>
+</footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', ()=> {
+  const passB = "ZXZvbXg5OEBwZW5pbGxhLmNvbQ==";
+  let allProducts = [];
+
+  const adminBtn = document.getElementById('adminBtn'),
+        loginBtn = document.getElementById('loginBtn'),
+        saveBtn  = document.getElementById('saveBtn'),
+        cancelBtn= document.getElementById('cancelBtn'),
+        searchInput = document.getElementById('search'),
+        loginDiv = document.getElementById('loginDiv'),
+        formDiv  = document.getElementById('formDiv'),
+        adminPanel = document.getElementById('adminPanel');
+
+  // abrir panel
+  adminBtn.onclick = ()=> {
+    adminPanel.style.display='block';
+    loginDiv.style.display='block';
+    formDiv.style.display='none';
+  };
+  cancelBtn.onclick = ()=> adminPanel.style.display='none';
+
+  // login
+  loginBtn.onclick = ()=>{
+    if(atob(passB)===document.getElementById('pass').value){
+      loginDiv.style.display='none';
+      formDiv.style.display='block';
+      document.getElementById('err').style.display='none';
+    } else {
+      document.getElementById('err').style.display='block';
+    }
+  };
+
+  // abrir lightbox
+  window.openImg = src=>{
+    const lb = document.getElementById('lightbox');
+    document.getElementById('lb').src=src;
+    lb.style.display='flex';
+  };
+
+  // fetch
+  async function fetchProducts(){
+    const res = await fetch('/.netlify/functions/listar-productos');
+    allProducts = await res.json();
+    render(allProducts);
+  }
+  async function sendProduct(p){
+    const res = await fetch('/.netlify/functions/guardar-producto',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(p)
+    });
+    return (await res.json()).ok;
+  }
+
+  // guardar
+  saveBtn.onclick = ()=>{
+    const file = document.getElementById('image').files[0];
+    if(!file) return alert('Debes subir una imagen');
+    const reader = new FileReader();
+    reader.onload = async e=>{
+      const p = {
+        codigo:document.getElementById('code').value,
+        titulo:document.getElementById('title').value,
+        genero:document.getElementById('gender').value,
+        tallas:document.getElementById('sizes').value,
+        colores:document.getElementById('colors').value,
+        whatsapp:document.getElementById('wa').value,
+        imagen:e.target.result
+      };
+      if(await sendProduct(p)){
+        adminPanel.style.display='none';
+        fetchProducts();
+      } else {
+        alert('Error al guardar');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // render
+  function render(list){
+    const catalog = document.getElementById('catalog');
+    catalog.innerHTML='';
+    list.forEach(p=>{
+      const msg = encodeURIComponent(`Hola, estoy interesado en: ${p.titulo} (Código:${p.codigo}, Talla:${p.tallas}, Color:${p.colores})`);
+      const card = document.createElement('div');
+      card.className='card';
+      card.innerHTML=`
+        <img src="${p.imagen}" onclick="openImg('${p.imagen}')" />
+        <h3>${p.titulo}</h3>
+        <p>Código: ${p.codigo}</p>
+        <p>Categoría: ${p.genero}</p>
+        <p>Talla: ${p.tallas}</p>
+        <p>Color: ${p.colores}</p>
+        <a class="btn btn-whatsapp" href="https://wa.me/${p.whatsapp}?text=${msg}" target="_blank">WhatsApp</a>`;
+      catalog.appendChild(card);
+    });
+  }
+
+  // búsqueda
+  searchInput.oninput = ()=>{
+    const q = searchInput.value.toLowerCase();
+    render(allProducts.filter(p=>
+      p.titulo.toLowerCase().includes(q)||
+      p.codigo.toLowerCase().includes(q)||
+      p.genero.toLowerCase().includes(q)
+    ));
+  };
+
+  fetchProducts();
+});
+</script>
+</body>
+</html>
