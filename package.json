@@ -1,7 +1,0 @@
-{
-  "name": "evomx98-backend",
-  "version": "1.0.0",
-  "dependencies": {
-    "@netlify/neon": "^2.0.0"
-  }
-}
