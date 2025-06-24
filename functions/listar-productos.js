@@ -1,25 +1,11 @@
-import { Client } from 'pg';
-
 export default async () => {
   try {
-    const client = new Client({
-      connectionString: process.env.PG_DATABASE_URL,
-      ssl: { rejectUnauthorized: false }
-    });
-
-    await client.connect();
-
-    const result = await client.query("SELECT * FROM productos ORDER BY id DESC");
-
-    await client.end();
-
-    return new Response(JSON.stringify(result.rows || []), {
+    return new Response("✅ La función se ejecutó correctamente", {
       status: 200,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'text/plain' }
     });
   } catch (error) {
-    // ⚠️ Mostrar error como texto plano
-    return new Response(`🚫 Error detallado: ${error.message}`, {
+    return new Response("❌ Error: " + error.message, {
       status: 500,
       headers: { 'Content-Type': 'text/plain' }
     });
