@@ -37,14 +37,12 @@
 <button class="admin-btn" id="adminBtn">Admin</button>
 
 <div id="adminPanel">
-  <!-- LOGIN -->
   <div id="loginDiv">
     <h2>Acceso Admin</h2>
     <input type="password" id="pass" placeholder="Contraseña"/>
     <button id="loginBtn" class="btn">Entrar</button>
     <p id="err" style="color:#f33;display:none;">Contraseña incorrecta</p>
   </div>
-  <!-- FORMULARIO -->
   <div id="formDiv" style="display:none;">
     <h2>Agregar Producto</h2>
     <input id="code" placeholder="Código único"/>
@@ -90,7 +88,6 @@ document.addEventListener('DOMContentLoaded', ()=> {
         formDiv  = document.getElementById('formDiv'),
         adminPanel = document.getElementById('adminPanel');
 
-  // abrir panel
   adminBtn.onclick = ()=> {
     adminPanel.style.display='block';
     loginDiv.style.display='block';
@@ -98,7 +95,6 @@ document.addEventListener('DOMContentLoaded', ()=> {
   };
   cancelBtn.onclick = ()=> adminPanel.style.display='none';
 
-  // login
   loginBtn.onclick = ()=>{
     if(atob(passB)===document.getElementById('pass').value){
       loginDiv.style.display='none';
@@ -109,29 +105,42 @@ document.addEventListener('DOMContentLoaded', ()=> {
     }
   };
 
-  // abrir lightbox
   window.openImg = src=>{
     const lb = document.getElementById('lightbox');
     document.getElementById('lb').src=src;
     lb.style.display='flex';
   };
 
-  // fetch
   async function fetchProducts(){
-    const res = await fetch('/.netlify/functions/listar-productos');
-    allProducts = await res.json();
-    render(allProducts);
-  }
-  async function sendProduct(p){
-    const res = await fetch('/.netlify/functions/guardar-producto',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(p)
-    });
-    return (await res.json()).ok;
+    try {
+      const res = await fetch('/.netlify/functions/listar-productos');
+      const list = await res.json();
+      if (!Array.isArray(list)) {
+        console.error("❌ Error: Respuesta no es una lista:", list);
+        return;
+      }
+      allProducts = list;
+      render(allProducts);
+    } catch (err) {
+      console.error("❌ Error de conexión:", err);
+    }
   }
 
-  // guardar
+  async function sendProduct(p){
+    try {
+      const res = await fetch('/.netlify/functions/guardar-producto',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(p)
+      });
+      const result = await res.json();
+      return result.ok;
+    } catch (err) {
+      console.error("❌ Error al guardar:", err);
+      return false;
+    }
+  }
+
   saveBtn.onclick = ()=>{
     const file = document.getElementById('image').files[0];
     if(!file) return alert('Debes subir una imagen');
@@ -150,13 +159,12 @@ document.addEventListener('DOMContentLoaded', ()=> {
         adminPanel.style.display='none';
         fetchProducts();
       } else {
-        alert('Error al guardar');
+        alert('❌ Error al guardar producto');
       }
     };
     reader.readAsDataURL(file);
   };
 
-  // render
   function render(list){
     const catalog = document.getElementById('catalog');
     catalog.innerHTML='';
@@ -176,12 +184,11 @@ document.addEventListener('DOMContentLoaded', ()=> {
     });
   }
 
-  // búsqueda
   searchInput.oninput = ()=>{
     const q = searchInput.value.toLowerCase();
     render(allProducts.filter(p=>
-      p.titulo.toLowerCase().includes(q)||
-      p.codigo.toLowerCase().includes(q)||
+      p.titulo.toLowerCase().includes(q) ||
+      p.codigo.toLowerCase().includes(q) ||
       p.genero.toLowerCase().includes(q)
     ));
   };
