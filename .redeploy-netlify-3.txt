@@ -1,0 +1,1 @@
+Forzar redeploy manual después de agregar PG_DATABASE_URL
