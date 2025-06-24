@@ -10,17 +10,19 @@ export default async () => {
     await client.connect();
 
     const result = await client.query("SELECT * FROM productos ORDER BY id DESC");
-
     await client.end();
 
-    return new Response(JSON.stringify(result.rows), {
+    return new Response(JSON.stringify(result.rows || []), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    return new Response("🚫 Error detallado: " + error.message, {
-      status: 500,
-      headers: { 'Content-Type': 'text/plain' }
+    return new Response(JSON.stringify({
+      ok: false,
+      error: error.message || "Error inesperado en listar-productos"
+    }), {
+      status: 200, // Para que el frontend pueda leer el error sin fallar
+      headers: { 'Content-Type': 'application/json' }
     });
   }
 };
