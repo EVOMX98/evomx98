@@ -1,15 +1,44 @@
-import { neon } from '@netlify/neon';
+import { Client } from 'pg';
 
-export default async (req) => {
+export default async (req, context) => {
   try {
-    const p = await req.json();
-    const { sql } = neon();
-    await sql`
+    const body = await req.json();
+
+    const client = new Client({
+      connectionString: process.env.PG_DATABASE_URL,
+      ssl: { rejectUnauthorized: false }
+    });
+
+    await client.connect();
+
+    const query = `
       INSERT INTO productos (titulo, codigo, genero, tallas, colores, whatsapp, imagen)
-      VALUES (${p.titulo}, ${p.codigo}, ${p.genero}, ${p.tallas}, ${p.colores}, ${p.whatsapp}, ${p.imagen});
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
     `;
-    return new Response(JSON.stringify({ ok: true }), { status: 200 });
-  } catch (e) {
-    return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500 });
+    const values = [
+      body.titulo,
+      body.codigo,
+      body.genero,
+      body.tallas,
+      body.colores,
+      body.whatsapp,
+      body.imagen
+    ];
+
+    await client.query(query, values);
+    await client.end();
+
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({
+      ok: false,
+      error: error.message
+    }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 };
