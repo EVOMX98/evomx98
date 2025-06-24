@@ -1,44 +1,40 @@
 import { Client } from 'pg';
 
-export default async (req, context) => {
+export default async (req) => {
   try {
-    const body = await req.json();
+    const data = await req.json();
 
     const client = new Client({
       connectionString: process.env.PG_DATABASE_URL,
-      ssl: { rejectUnauthorized: false }
+      ssl: { rejectUnauthorized: false },
     });
 
     await client.connect();
 
-    const query = `
-      INSERT INTO productos (titulo, codigo, genero, tallas, colores, whatsapp, imagen)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-    `;
-    const values = [
-      body.titulo,
-      body.codigo,
-      body.genero,
-      body.tallas,
-      body.colores,
-      body.whatsapp,
-      body.imagen
-    ];
+    await client.query(
+      `INSERT INTO productos (titulo, codigo, genero, tallas, colores, whatsapp, imagen)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        data.titulo,
+        data.codigo,
+        data.genero,
+        data.tallas,
+        data.colores,
+        data.whatsapp,
+        data.imagen,
+      ]
+    );
 
-    await client.query(query, values);
     await client.end();
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
-      headers: { "Content-Type": "application/json" }
+      headers: { 'Content-Type': 'application/json' },
     });
-  } catch (error) {
-    return new Response(JSON.stringify({
-      ok: false,
-      error: error.message
-    }), {
+  } catch (err) {
+    return new Response(JSON.stringify({ ok: false, error: err.message }), {
       status: 500,
-      headers: { "Content-Type": "application/json" }
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 };
