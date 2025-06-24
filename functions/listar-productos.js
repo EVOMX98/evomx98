@@ -21,7 +21,7 @@ export default async () => {
       ok: false,
       error: error.message || "Error inesperado en listar-productos"
     }), {
-      status: 200, // Para que el frontend pueda leer el error sin fallar
+      status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
   }
